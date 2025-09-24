@@ -19,7 +19,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "emergency_stop = ros_behaviors_fsm.emergency_stop:main",
+            "fsm = ros_behaviors_fsm.fsm:main",
             "neato_follower = ros_behaviors_fsm.neato_follower:main",
             "drive_straight = ros_behaviors_fsm.drive_straight:main",
         ],
