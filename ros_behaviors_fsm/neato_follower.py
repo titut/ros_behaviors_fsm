@@ -33,6 +33,7 @@ class NeatoFollower(Node):
         self.Kp_angle = 0.6
         self.Kp_linear = 0.5
         self.desired_location = np.array([0, 0])
+        self.tracking = False
 
         # LIDAR scan data in x, y coordinates in Neato frame
         self.dist_x = []
@@ -63,17 +64,26 @@ class NeatoFollower(Node):
         DBSCAN into distinct objects. Get objects based on size and distance
         to Neato. Return coordinates associated with object.
         """
-        db_default = DBSCAN(eps=0.2, min_samples=3).fit(coords)
+        # data cleaning
+        data = np.where(abs(coords) > 10, 10, coords)
+        data = np.nan_to_num(data, nan=0.0)
+        # segmentation using DBSCAN
+        db_default = DBSCAN(eps=0.2, min_samples=3).fit(data)
 
+        # initiate array to store different label
         obj_coords = [[[], []] for _ in range(7)]
-        min_dist = 100
+
+        # variables to find point to follow
+        min_dist = 1.5
         min_moment = None
 
+        # Arrange data into arrays by labels
         for i in range(coords.shape[0]):
             if db_default.labels_[i] < 6 and db_default.labels_[i] != -1:
                 obj_coords[db_default.labels_[i]][0].append(coords[i, 0])
                 obj_coords[db_default.labels_[i]][1].append(coords[i, 1])
 
+        # Find moment of each object, find closest object by moment
         for index, obj_coord in enumerate(obj_coords):
             obj = np.array(obj_coord).transpose()
             moment = self.calculate_moment(obj)
@@ -84,7 +94,13 @@ class NeatoFollower(Node):
                 min_dist = dist
                 min_moment = moment
 
-        self.desired_location = min_moment
+        # Only follow objects within 1.5 meters
+        if min_dist >= 1.5:
+            self.desired_location = np.array([0, 0])
+            self.tracking = False
+        else:
+            self.desired_location = min_moment
+            self.tracking = True
 
     def calculate_moment(self, coords):
         """
@@ -110,7 +126,7 @@ class NeatoFollower(Node):
         """
         Moves towards desired location using proportional control
         """
-
+        self.get_logger().info(f"Tracking: {self.tracking}")
         angle_err = (
             atan2(self.desired_location[1], self.desired_location[0]) - np.pi / 2
         )
