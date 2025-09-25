@@ -7,6 +7,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Twist, Vector3
 from sensor_msgs.msg import LaserScan
+from std_msgs.msg import String, Bool
 
 import numpy as np
 from sklearn.cluster import DBSCAN
@@ -20,10 +21,12 @@ class NeatoFollower(Node):
         super().__init__("neato_follower_node")
 
         # Create a publisher that publishes to topic "/cmd_vel" controlling robot speed
-        self.publisher = self.create_publisher(Twist, "/cmd_vel", 10)
+        self.publisher = self.create_publisher(Twist, "cmd_vel", 10)
+        self.scan_pub = self.create_publisher(Bool, "scan_status", 10)
 
         # Create a subscriber to "/scan," getting LIDAR data
         self.subscriber = self.create_subscription(LaserScan, "/scan", self.on_scan, 10)
+        self.state_sub = self.create_subscription(String, "state", self.process_msg, 10)
 
         # Create a timer that fires ten times per second
         timer_period = 0.1
@@ -34,10 +37,15 @@ class NeatoFollower(Node):
         self.Kp_linear = 0.5
         self.desired_location = np.array([0, 0])
         self.tracking = False
+        self.state = None
+        self.scan_msg = Bool()
 
         # LIDAR scan data in x, y coordinates in Neato frame
         self.dist_x = []
         self.dist_y = []
+
+    def process_msg(self, msg):
+        self.state = msg.data
 
     def on_scan(self, data):
         """
@@ -132,6 +140,12 @@ class NeatoFollower(Node):
         )
         distance_err = self.euclidian_dist(self.desired_location, [0, 0]) - 0.5
 
+        if self.tracking:
+            self.scan_msg.data = True
+        else:
+            self.scan_msg.data = False
+        self.scan_pub.publish(self.scan_msg)
+
         linear = Vector3(
             x=distance_err * self.Kp_linear if distance_err > 0.1 else 0.0,
             y=0.0,
@@ -145,7 +159,8 @@ class NeatoFollower(Node):
 
         twist = Twist(linear=linear, angular=angular)
 
-        self.publisher.publish(twist)
+        if self.state == "Follow":
+            self.publisher.publish(twist)
 
 
 def main(args=None):

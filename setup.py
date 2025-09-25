@@ -22,6 +22,7 @@ setup(
             "fsm = ros_behaviors_fsm.fsm:main",
             "neato_follower = ros_behaviors_fsm.neato_follower:main",
             "drive_straight = ros_behaviors_fsm.drive_straight:main",
+            "drive_star = ros_behaviors_fsm.drive_star:main",
         ],
     },
 )
