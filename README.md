@@ -39,8 +39,12 @@ The LiDAR scan data consists of distance readings at each whole number angle (in
 
 **NOTE:** when $\theta$ is zero, the LiDAR scan is reading the front of the robot, with increasing $\theta$ corresponding to readings in the counter-clockwise direction.
 
-$$x = -sin(\theta)\times d \\  
-y = -sin(\theta)\times d$$
+```math
+\begin{align*}
+x &= -sin(\theta)\times d \\
+y &= -sin(\theta)\times d
+\end{align*}
+```
 
 To further parse the data, we replace all values larger than 10 with 10. Larger values messed with the segmentation algorithm used in the next step (and we assumed that readings larger than the cutoff were inconsequential). The last step of parsing is removing all NaN values.
 
@@ -50,8 +54,12 @@ To detect objects, we use the DBSCAN clustering algorithm which finds clusters o
 
 From the list of objects clustered by the DBSCAN algorithm, we need to select the object closest to the Neato. To do this, we used an image processing technique called image moments which gives us a coordinate informing us where the object is located. The formula is shown below.
 
-$$ \bar{x} = \frac{\sum{x_i}}{count} \\
-\bar{y} = \frac{\sum{y_i}}{count}$$
+```math
+\begin{align*}
+\bar{x} &= \frac{\sum{x_i}}{count} \\
+\bar{y} &= \frac{\sum{y_i}}{count}
+\end{align*}
+```
 
 We find the euclidean distance between each object’s moment and the origin (where the Neato is). If the distance is larger than 1.5, we discard it. From the valid objects, we select the object closest to the Neato.
 
